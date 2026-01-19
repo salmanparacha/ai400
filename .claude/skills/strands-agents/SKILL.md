@@ -1,548 +1,493 @@
 ---
 name: strands-agents
-description: "Build AI agents using AWS Strands SDK from simple single agents to production-grade multi-agent systems. Use when: (1) Creating AI agents with custom tools, (2) Building multi-agent workflows, (3) Configuring agents with AWS Bedrock, (4) Implementing production agents with monitoring and logging, (5) Integrating AI agents into applications. Includes templates for minimal agents, custom tools, sequential workflows, and production deployments with comprehensive error handling."
+description: |
+  Build AI agents with AWS Strands SDK from hello world to production systems.
+  This skill should be used when creating agents, multi-agent systems, custom tools,
+  or integrating with model providers (Bedrock, Anthropic, OpenAI). Covers agent
+  configuration, structured outputs, session management, guardrails, and observability.
 ---
 
-# Strands Agents Development
+# Strands Agents Skill
 
-Build AI agents with AWS Strands SDK, from simple hello world agents to production-ready systems with custom tools, multi-agent workflows, and AWS Bedrock integration.
+Build AI agents from minimal examples to production-ready systems using AWS Strands SDK.
 
-## Quick Start
+## Before Implementation
 
-### Creating a New Project
+| Source | Gather |
+|--------|--------|
+| **Codebase** | Existing patterns, model provider in use, tool conventions |
+| **Conversation** | User's specific agent requirements, constraints |
+| **Skill References** | Patterns from `references/` (model configs, tools, multi-agent) |
+| **User Guidelines** | Project conventions, AWS region, security requirements |
 
-Use the project generator script to scaffold a new Strands agent project:
+### Required Clarifications
 
-```bash
-python scripts/create_project.py <template> <project-name>
-```
+Before building, clarify with user:
 
-Available templates:
-- `minimal` - Simple agent with built-in tools (good for learning)
-- `custom-tools` - Agent with custom tool examples
-- `multi-agent` - Sequential workflow with specialized agents
-- `production` - Production-ready with Bedrock, logging, error handling
+1. **Model Provider** - Which provider? (Bedrock default, Anthropic, OpenAI)
+2. **Tools Needed** - What capabilities? (built-in strands_tools, custom, MCP)
+3. **Complexity** - Single agent or multi-agent swarm?
 
-Example:
-```bash
-python scripts/create_project.py minimal my-first-agent
-cd my-first-agent
-pip install -r requirements.txt
-python main.py
-```
+### Optional Clarifications
 
-## Project Templates
+4. **Persistence** - Need conversation memory? (FileSessionManager, AgentCore)
+5. **Production** - Need guardrails, telemetry, hooks?
+6. **Structured Output** - Need typed responses? (Pydantic models)
 
-### 1. Minimal Agent
+---
 
-**When to use:** Learning Strands, quick prototypes, simple single-purpose agents
+## What This Skill Does NOT Do
 
-**What's included:**
-- Basic agent with built-in tools (calculator, current_time)
-- Simple query examples
-- Interactive mode
+- Deploy agents to AWS/cloud (use CDK, SAM, or Terraform)
+- Create or manage Bedrock guardrails (use AWS Console or CLI)
+- Manage AWS credentials or IAM roles
+- Create MCP servers (only shows integration patterns)
+- Handle billing or cost optimization
 
-**Location:** `assets/minimal/`
+---
 
-**Key features:**
+## Official Documentation
+
+| Resource | URL |
+|----------|-----|
+| Strands SDK GitHub | https://github.com/strands-agents/sdk-python |
+| Strands Tools | https://github.com/strands-agents/tools |
+| AWS Blog Announcement | https://aws.amazon.com/blogs/opensource/introducing-strands-agents-an-open-source-ai-agents-sdk/ |
+| AWS Bedrock Models | https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html |
+| PyPI strands-agents | https://pypi.org/project/strands-agents/ |
+| PyPI strands-agents-tools | https://pypi.org/project/strands-agents-tools/ |
+
+---
+
+## Quick Start Templates
+
+### Minimal Agent
+
 ```python
 from strands import Agent
-from strands_tools import calculator, current_time
 
-# Create agent
-agent = Agent(tools=[calculator, current_time])
-
-# Use agent
-response = agent("What time is it? Also calculate 10 + 20")
-print(response.message)
+agent = Agent()
+response = agent("Hello, what can you help me with?")
+print(response)
 ```
 
-### 2. Custom Tools Agent
+### Agent with Tools
 
-**When to use:** Building agents with domain-specific capabilities, adding custom functionality
+```python
+from strands import Agent
+from strands_tools import calculator, file_read, shell
 
-**What's included:**
-- Examples of custom tools using `@tool` decorator
-- Letter counter, word reverser, text analyzer examples
-- Mixed built-in and custom tools
+agent = Agent(tools=[calculator, file_read, shell])
+agent("What is 42 ^ 9?")
+```
 
-**Location:** `assets/custom-tools/`
+### Agent with Custom Tool
 
-**Key features:**
 ```python
 from strands import Agent, tool
 
 @tool
-def letter_counter(word: str, letter: str) -> int:
-    """
-    Count occurrences of a specific letter in a word.
+def weather(city: str) -> str:
+    """Get weather for a city.
 
     Args:
-        word: The input word to search in
-        letter: The specific letter to count
-
-    Returns:
-        The number of occurrences
+        city: City name to get weather for
     """
-    return word.lower().count(letter.lower())
+    return f"Weather for {city}: Sunny, 72F"
 
-agent = Agent(tools=[calculator, letter_counter])
+agent = Agent(tools=[weather])
+agent("What's the weather in Seattle?")
 ```
 
-**For detailed patterns:** See [references/custom-tools-patterns.md](references/custom-tools-patterns.md)
+---
 
-### 3. Multi-Agent Workflow
+## Installation
 
-**When to use:** Complex tasks requiring specialized processing stages, research-analyze-report pipelines
+```bash
+# Recommended: Install SDK + tools together
+pip install strands-agents strands-agents-tools
 
-**What's included:**
-- Sequential workflow pattern (researcher → analyst → writer)
-- Specialized agent roles with custom system prompts
-- Data passing between agents
-- Progress tracking
+# Or install separately
+pip install strands-agents              # Core SDK only
+pip install strands-agents-tools        # 40+ built-in tools
 
-**Location:** `assets/multi-agent/`
-
-**Key features:**
-```python
-from strands import Agent
-
-# Specialized agents
-researcher = Agent(
-    system_prompt="You are a research specialist...",
-    callback_handler=None  # Silent
-)
-
-analyst = Agent(system_prompt="You are a data analyst...")
-writer = Agent(system_prompt="You are a professional writer...")
-
-# Sequential workflow
-research = researcher(f"Research {topic}")
-analysis = analyst(f"Analyze: {research}")
-report = writer(f"Write report: {analysis}")
+# With specific model providers
+pip install 'strands-agents[anthropic]'  # Anthropic direct API
+pip install 'strands-agents[openai]'     # OpenAI
+pip install 'strands-agents[all]'        # All providers
 ```
 
-**For detailed patterns:** See [references/multi-agent-patterns.md](references/multi-agent-patterns.md)
+---
 
-### 4. Production Agent
+## Core Patterns
 
-**When to use:** Production deployments, AWS Bedrock integration, enterprise applications
-
-**What's included:**
-- AWS Bedrock model configuration
-- Comprehensive error handling with fallbacks
-- Structured logging to file and console
-- Metrics collection (execution time, tool usage)
-- Environment-based configuration
-- Graceful degradation
-
-**Location:** `assets/production/`
-
-**Setup required:**
-1. Install requirements (includes boto3)
-2. Copy `.env.example` to `.env`
-3. Configure AWS credentials and region
-
-**Key features:**
-```python
-from strands.models import BedrockModel
-
-# Production model config
-model = BedrockModel(
-    model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-    region="us-east-1",
-    temperature=0.3,
-    max_tokens=4096
-)
-
-agent = Agent(
-    model=model,
-    tools=[calculator],
-    callback_handler=metrics_collector
-)
-```
-
-**For detailed patterns:**
-- Model configuration: [references/model-configuration.md](references/model-configuration.md)
-- Logging: [references/callback-handlers.md](references/callback-handlers.md)
-
-## Core Concepts
-
-### Creating Agents
-
-Basic agent creation:
+### 1. Agent Configuration
 
 ```python
 from strands import Agent
 
-# Simplest form
-agent = Agent()
-
-# With tools
-agent = Agent(tools=[calculator, current_time])
-
-# With custom system prompt
 agent = Agent(
-    system_prompt="You are a helpful coding assistant.",
-    tools=[calculator]
+    system_prompt="You are a helpful assistant specialized in X.",
+    tools=[...],              # List of tool functions
+    model=model_instance,     # Model provider (optional, defaults to Bedrock)
+    callback_handler=fn,      # Stream handling (optional)
+    session_manager=mgr,      # Conversation persistence (optional)
+    hooks=[...],              # Lifecycle hooks (optional)
 )
 
-# With specific model
-agent = Agent(model="claude-3-5-sonnet-20241022")
+# Invoke
+response = agent("User message")
+print(response.message)  # Final response text
 ```
 
-### Using Agents
+### 2. Model Providers
 
 ```python
-# Simple query
-response = agent("What is 42 * 17?")
-print(response.message)
+# AWS Bedrock - Claude (default)
+from strands.models.bedrock import BedrockModel
+model = BedrockModel(model_id="anthropic.claude-sonnet-4-20250514-v1:0")
 
-# Agent automatically selects and uses tools
-response = agent("""
-1. What time is it?
-2. Calculate 100 / 5
-3. Count R's in 'strawberry'
-""")
-```
+# AWS Bedrock - Amazon Nova
+model = BedrockModel(model_id="amazon.nova-pro-v1:0")  # Balanced
+model = BedrockModel(model_id="amazon.nova-lite-v1:0")  # Fast/cheap
+model = BedrockModel(model_id="amazon.nova-premier-v1:0")  # Most capable
+model = BedrockModel(model_id="amazon.nova-2-lite-v1:0")  # Extended thinking
 
-### Custom Tools
+# Anthropic Direct
+from strands.models.anthropic import AnthropicModel
+model = AnthropicModel(
+    client_args={"api_key": "..."},
+    model_id="claude-sonnet-4-20250514",
+    max_tokens=1024
+)
 
-Create tools with the `@tool` decorator:
-
-```python
-from strands import tool
-
-@tool
-def calculate_discount(price: float, discount_percent: float) -> float:
-    """
-    Calculate final price after discount.
-
-    Args:
-        price: Original price
-        discount_percent: Discount percentage (0-100)
-
-    Returns:
-        Final price after discount
-    """
-    return price * (1 - discount_percent / 100)
-
-agent = Agent(tools=[calculate_discount])
-```
-
-**Requirements for custom tools:**
-- Use `@tool` decorator
-- Include comprehensive docstring (agent uses this to understand the tool)
-- Add type hints for all parameters and return value
-- Handle errors gracefully
-
-**See [references/custom-tools-patterns.md](references/custom-tools-patterns.md) for:**
-- Input validation
-- Error handling
-- Optional parameters
-- Best practices
-
-### Multi-Agent Workflows
-
-Create specialized agents and chain them:
-
-```python
-# Create specialized agents
-planner = Agent(system_prompt="You create detailed plans.")
-executor = Agent(system_prompt="You execute plans step by step.")
-reviewer = Agent(system_prompt="You review and verify work.")
-
-# Sequential workflow
-plan = planner("Create a plan for building a web app")
-execution = executor(f"Execute this plan: {plan}")
-review = reviewer(f"Review this work: {execution}")
-```
-
-**Common patterns:**
-- Sequential processing (research → analyze → write)
-- Specialized roles (data collector, analyst, writer)
-- Context accumulation (each agent adds to shared context)
-- Validation between steps
-
-**See [references/multi-agent-patterns.md](references/multi-agent-patterns.md) for:**
-- Workflow patterns
-- Error handling in workflows
-- Parallel processing
-- Fallback strategies
-
-### Model Configuration
-
-#### Simple Configuration
-
-```python
-agent = Agent(model="claude-3-5-sonnet-20241022")
-```
-
-#### AWS Bedrock Configuration
-
-```python
-from strands.models import BedrockModel
-
-model = BedrockModel(
-    model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-    region="us-east-1",
-    temperature=0.3,  # Lower = more focused
-    max_tokens=4096,
-    top_p=0.9
+# OpenAI
+from strands.models.openai import OpenAIModel
+model = OpenAIModel(
+    client_args={"api_key": "..."},
+    model_id="gpt-4o"
 )
 
 agent = Agent(model=model)
 ```
 
-**AWS credentials setup:**
-```bash
-# Environment variables
-export AWS_ACCESS_KEY_ID="your_key"
-export AWS_SECRET_ACCESS_KEY="your_secret"
-export AWS_DEFAULT_REGION="us-east-1"
-```
+See `references/model-providers.md` for full configuration options including all Nova models.
 
-**See [references/model-configuration.md](references/model-configuration.md) for:**
-- Bedrock model IDs
-- Environment-specific configurations
-- Temperature and token settings
-- Region selection
-- Error handling and fallbacks
-
-### Callback Handlers
-
-Monitor and log agent execution:
+### 3. Custom Tools
 
 ```python
-def custom_callback(**kwargs):
-    if "data" in kwargs:
-        print(kwargs["data"], end="")
-    elif "current_tool_use" in kwargs:
-        tool = kwargs["current_tool_use"]
-        print(f"\n[Using: {tool.get('name')}]\n")
+from strands import tool
 
-agent = Agent(
-    tools=[calculator],
-    callback_handler=custom_callback
-)
-```
-
-**Use cases:**
-- Monitor agent responses (streaming text)
-- Track tool usage
-- Log to files
-- Collect metrics
-- Update custom UI
-- Debug agent behavior
-
-**See [references/callback-handlers.md](references/callback-handlers.md) for:**
-- Built-in handlers
-- Custom logging
-- Metrics collection
-- Production patterns
-
-## Common Workflows
-
-### Building a Simple Agent
-
-1. Create project:
-   ```bash
-   python scripts/create_project.py minimal my-agent
-   cd my-agent
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run:
-   ```bash
-   python main.py
-   ```
-
-4. Add custom tools in `main.py`:
-   ```python
-   @tool
-   def my_tool(input: str) -> str:
-       """My custom tool."""
-       return f"Processed: {input}"
-
-   agent = Agent(tools=[calculator, my_tool])
-   ```
-
-### Building a Multi-Agent System
-
-1. Create project:
-   ```bash
-   python scripts/create_project.py multi-agent my-workflow
-   cd my-workflow
-   pip install -r requirements.txt
-   ```
-
-2. Customize agents in `main.py`:
-   - Update system prompts for your domain
-   - Add custom tools to each agent
-   - Modify workflow logic
-
-3. Run:
-   ```bash
-   python main.py
-   ```
-
-### Deploying to Production
-
-1. Create production project:
-   ```bash
-   python scripts/create_project.py production my-prod-agent
-   cd my-prod-agent
-   pip install -r requirements.txt
-   ```
-
-2. Configure environment:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your AWS credentials
-   ```
-
-3. Test locally:
-   ```bash
-   python main.py
-   ```
-
-4. Deploy (example with Docker):
-   ```dockerfile
-   FROM python:3.11-slim
-   WORKDIR /app
-   COPY requirements.txt .
-   RUN pip install -r requirements.txt
-   COPY . .
-   CMD ["python", "main.py"]
-   ```
-
-## Best Practices
-
-### Agent Design
-
-**Use focused system prompts:**
-```python
-# Good: Specific and actionable
-Agent(system_prompt="""You are a Python code reviewer.
-Focus on: security, performance, PEP 8 compliance.
-Provide specific line numbers and fixes.""")
-
-# Avoid: Too vague
-Agent(system_prompt="You help with code")
-```
-
-**Choose appropriate models:**
-- Fast responses: `claude-3-haiku-20240307`
-- Balanced: `claude-3-5-sonnet-20241022` (recommended)
-- Complex reasoning: `claude-3-opus-20240229`
-
-### Custom Tools
-
-**Write clear docstrings:**
-```python
 @tool
-def search_database(query: str, limit: int = 10) -> list:
-    """
-    Search the product database.
-
-    Use this when user asks about products or inventory.
+def my_tool(param1: str, param2: int = 10) -> str:
+    """Tool description shown to the model.
 
     Args:
-        query: Search query string
-        limit: Maximum results (default: 10)
-
-    Returns:
-        List of matching products
+        param1: Description of param1
+        param2: Description of param2
     """
-    # Implementation
-```
+    return f"Result: {param1}, {param2}"
 
-**Handle errors gracefully:**
-```python
+# Async tools
 @tool
-def read_file(filepath: str) -> str:
-    """Read file contents."""
+async def async_tool(query: str) -> str:
+    """Async tools run concurrently."""
+    result = await some_async_operation(query)
+    return result
+```
+
+See `references/custom-tools.md` for patterns and best practices.
+
+### 4. Structured Output
+
+```python
+from pydantic import BaseModel, Field
+from strands import Agent
+
+class PersonInfo(BaseModel):
+    name: str = Field(description="Full name")
+    age: int = Field(description="Age in years")
+    occupation: str = Field(description="Job title")
+
+agent = Agent()
+result = agent.structured_output(
+    PersonInfo,
+    "John Smith is a 30-year-old software engineer"
+)
+
+print(result.name)       # "John Smith"
+print(result.age)        # 30
+print(result.occupation) # "software engineer"
+```
+
+### 5. Session Management
+
+```python
+from strands import Agent
+from strands.session.file_session_manager import FileSessionManager
+
+# Local file persistence
+session_manager = FileSessionManager(session_id="user-123")
+agent = Agent(session_manager=session_manager)
+
+# Conversations auto-persist
+agent("My name is Alice")
+# Later...
+agent("What's my name?")  # Remembers "Alice"
+```
+
+### 6. Callback Handlers (Streaming)
+
+```python
+from strands import Agent
+
+def callback_handler(**kwargs):
+    if "data" in kwargs:
+        print(kwargs["data"], end="")  # Stream text
+    elif "current_tool_use" in kwargs:
+        tool = kwargs["current_tool_use"]
+        print(f"\n[Using: {tool.get('name')}]")
+
+agent = Agent(callback_handler=callback_handler)
+agent("Explain quantum computing")
+```
+
+---
+
+## Multi-Agent Systems
+
+### Swarm Tool (Simple)
+
+```python
+from strands import Agent
+from strands_tools import swarm
+
+agent = Agent(
+    tools=[swarm],
+    system_prompt="Create a swarm of agents to solve complex queries."
+)
+
+agent("Research and summarize quantum computing advances")
+```
+
+### Explicit Swarm (Advanced)
+
+```python
+from strands import Agent
+from strands.multiagent import Swarm
+
+researcher = Agent(
+    name="researcher",
+    system_prompt="You research topics and gather facts."
+)
+
+writer = Agent(
+    name="writer",
+    system_prompt="You write clear summaries from research."
+)
+
+swarm = Swarm(
+    agents=[researcher, writer],
+    entry_point=researcher,
+    max_handoffs=20,
+    max_iterations=20,
+    execution_timeout=900.0,
+    node_timeout=300.0,
+)
+
+result = swarm.run("Explain machine learning")
+print(result.status)  # "completed"
+```
+
+See `references/multi-agent.md` for orchestration patterns.
+
+---
+
+## Production Patterns
+
+### Guardrails (Bedrock)
+
+```python
+from strands import Agent
+from strands.models.bedrock import BedrockModel
+
+model = BedrockModel(
+    model_id="anthropic.claude-sonnet-4-20250514-v1:0",
+    guardrail_id="your-guardrail-id",
+    guardrail_version="1",
+    guardrail_trace="enabled",
+)
+
+agent = Agent(model=model)
+```
+
+### Lifecycle Hooks
+
+```python
+from strands import Agent
+from strands.hooks import (
+    HookProvider, HookRegistry,
+    BeforeInvocationEvent, AfterInvocationEvent,
+    BeforeToolCallEvent, AfterToolCallEvent
+)
+
+class LoggingHook(HookProvider):
+    def register_hooks(self, registry: HookRegistry) -> None:
+        registry.add_callback(BeforeInvocationEvent, self.on_start)
+        registry.add_callback(AfterInvocationEvent, self.on_end)
+        registry.add_callback(BeforeToolCallEvent, self.on_tool)
+
+    def on_start(self, event: BeforeInvocationEvent):
+        print(f"Request started: {event.agent.name}")
+
+    def on_end(self, event: AfterInvocationEvent):
+        print(f"Request completed: {event.agent.name}")
+
+    def on_tool(self, event: BeforeToolCallEvent):
+        print(f"Tool called: {event.tool_use['name']}")
+
+agent = Agent(hooks=[LoggingHook()])
+```
+
+### Observability
+
+```python
+from strands import Agent
+from strands.telemetry import StrandsTelemetry
+
+telemetry = StrandsTelemetry()
+telemetry.setup_otlp_exporter()  # Send to OTLP endpoint
+telemetry.setup_console_exporter()  # Also print to console
+
+agent = Agent(system_prompt="You are helpful.")
+response = agent("Hello")
+```
+
+See `references/production-patterns.md` for complete setup.
+
+---
+
+## MCP Integration
+
+```python
+from mcp.client.streamable_http import streamablehttp_client
+from strands import Agent
+from strands.tools.mcp.mcp_client import MCPClient
+
+def create_transport():
+    return streamablehttp_client("http://localhost:8000/mcp/")
+
+mcp_client = MCPClient(create_transport)
+
+with mcp_client:
+    tools = mcp_client.list_tools_sync()
+    agent = Agent(tools=tools)
+    response = agent("Use the MCP tools to help me")
+```
+
+---
+
+## Decision Tree
+
+```
+What type of agent?
+├── Single agent, simple task
+│   └── Use basic Agent() with tools
+├── Single agent, needs memory
+│   └── Add FileSessionManager or AgentCoreMemorySessionManager
+├── Multiple agents collaborate
+│   └── Use Swarm with defined agent roles
+├── Need structured data extraction
+│   └── Use agent.structured_output() with Pydantic
+├── Production deployment
+│   └── Add guardrails + hooks + telemetry
+└── External tool servers
+    └── Use MCPClient integration
+```
+
+---
+
+## Project Templates
+
+Start new projects from templates in `assets/`:
+
+| Template | Description | Use When |
+|----------|-------------|----------|
+| `assets/minimal/` | Hello world agent | Learning basics |
+| `assets/custom-tools/` | Agent with custom tools | Building tool-based agents |
+| `assets/multi-agent/` | Swarm with multiple agents | Complex workflows |
+| `assets/production/` | Full production setup | Deploying to production |
+
+Use `scripts/create_project.py` to scaffold:
+```bash
+python scripts/create_project.py my-agent --template production
+```
+
+---
+
+## Reference Files
+
+| File | Content |
+|------|---------|
+| `references/model-providers.md` | All model configs (Bedrock Claude, Nova, Anthropic, OpenAI) |
+| `references/custom-tools.md` | Tool patterns, async tools, validation |
+| `references/multi-agent.md` | Swarm configuration, handoff patterns |
+| `references/hooks-lifecycle.md` | All events, hook patterns, modifications |
+| `references/production-patterns.md` | Guardrails, observability, session management |
+
+---
+
+## Common Patterns
+
+> **Note**: All examples below assume `from strands import Agent, tool` is imported.
+
+### Error Handling in Tools
+
+```python
+from strands import tool
+
+@tool
+def safe_operation(input: str) -> str:
+    """Safely process input."""
     try:
-        with open(filepath) as f:
-            return f.read()
-    except FileNotFoundError:
-        return f"Error: File not found: {filepath}"
-    except Exception as e:
-        return f"Error reading file: {str(e)}"
+        result = process(input)
+        return result
+    except ValueError as e:
+        return f"Error: {str(e)}"
 ```
 
-### Multi-Agent Systems
+### Tool with Dependencies
 
-**Keep agents specialized:**
 ```python
-# Good: Clear specialization
-data_agent = Agent(system_prompt="Collect data")
-analysis_agent = Agent(system_prompt="Analyze data")
+import httpx
+from strands import tool
 
-# Avoid: Overlapping responsibilities
-agent = Agent(system_prompt="Collect and analyze data")
+@tool
+def fetch_data(url: str) -> str:
+    """Fetch data from URL."""
+    response = httpx.get(url)
+    return response.text
 ```
 
-**Pass minimal context:**
+### Conditional Tool Selection
+
 ```python
-# Good: Pass only what's needed
-summary = agent1(task)
-result = agent2(f"Analyze: {summary}")
+from strands import Agent, tool
 
-# Avoid: Passing everything
-full_history = agent1.get_full_history()
-result = agent2(full_history)  # Too much context
+@tool
+def database_query(sql: str) -> str:
+    """Query the database. Use for data retrieval."""
+    # Implementation
+    pass
+
+@tool
+def api_call(endpoint: str) -> str:
+    """Call external API. Use for real-time data."""
+    # Implementation
+    pass
+
+agent = Agent(
+    tools=[database_query, api_call],
+    system_prompt="Use database for historical data, API for real-time."
+)
 ```
-
-### Production Deployment
-
-**Use environment variables:**
-```python
-import os
-
-region = os.getenv("AWS_REGION", "us-east-1")
-temperature = float(os.getenv("MODEL_TEMPERATURE", "0.3"))
-```
-
-**Implement error handling:**
-```python
-try:
-    response = agent(query)
-except Exception as e:
-    logger.error(f"Agent error: {e}")
-    # Fallback or notify
-```
-
-**Log important events:**
-```python
-logger.info(f"Processing query: {query}")
-logger.info(f"Tools used: {tool_count}")
-logger.error(f"Error: {error}")
-```
-
-## Installation
-
-Install Strands agents SDK:
-
-```bash
-pip install strands-agents
-```
-
-For AWS Bedrock support:
-
-```bash
-pip install strands-agents boto3
-```
-
-## Resources
-
-- **scripts/create_project.py** - Project scaffolding tool
-- **assets/** - Project templates (minimal, custom-tools, multi-agent, production)
-- **references/custom-tools-patterns.md** - Custom tool creation and best practices
-- **references/multi-agent-patterns.md** - Multi-agent workflows and collaboration
-- **references/model-configuration.md** - Model configuration and AWS Bedrock setup
-- **references/callback-handlers.md** - Monitoring, logging, and debugging patterns

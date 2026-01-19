@@ -1,270 +1,218 @@
-"""
-Production Strands Agent Example
-
-Production-ready agent with:
-- AWS Bedrock model configuration
-- Comprehensive error handling
-- Structured logging
-- Metrics collection
-- Environment-based configuration
-"""
+#!/usr/bin/env python3
+"""Production-Ready Strands Agent with all best practices."""
 
 import os
-import logging
-import json
 import time
-from datetime import datetime
-from strands import Agent
-from strands.models import BedrockModel
-from strands_tools import calculator, current_time
+import logging
+from typing import Optional
+
+from pydantic import BaseModel, Field
+from strands import Agent, tool
+from strands.models.bedrock import BedrockModel
+from strands.session.file_session_manager import FileSessionManager
+from strands.hooks import (
+    HookProvider,
+    HookRegistry,
+    BeforeInvocationEvent,
+    AfterInvocationEvent,
+    BeforeToolCallEvent,
+)
+from strands.telemetry import StrandsTelemetry
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('agent.log'),
-        logging.StreamHandler()
-    ]
-)
-
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class MetricsCollector:
-    """Collect agent execution metrics."""
 
-    def __init__(self):
-        self.start_time = None
-        self.tool_calls = []
-        self.response_length = 0
-        self.tool_use_ids = set()
+# ============================================================================
+# Structured Output Models
+# ============================================================================
 
-    def __call__(self, **kwargs):
-        """Callback handler for metrics collection."""
-        if self.start_time is None:
-            self.start_time = time.time()
+class TaskResult(BaseModel):
+    """Structured output for task completion."""
+    status: str = Field(description="'success' or 'error'")
+    result: str = Field(description="The task result or error message")
+    confidence: float = Field(description="Confidence score 0-1", ge=0, le=1)
 
-        if "data" in kwargs:
-            # Track response length
-            self.response_length += len(kwargs["data"])
-            # Also print the output
-            print(kwargs["data"], end="")
 
-        elif "current_tool_use" in kwargs:
-            tool = kwargs["current_tool_use"]
-            tool_id = tool.get("toolUseId")
+# ============================================================================
+# Custom Tools
+# ============================================================================
 
-            # Only count unique tool uses
-            if tool_id and tool_id not in self.tool_use_ids:
-                self.tool_use_ids.add(tool_id)
-                self.tool_calls.append({
-                    "name": tool.get("name"),
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "input": tool.get("input", {})
-                })
-                print(f"\n[Using tool: {tool.get('name')}]\n")
-
-    def get_metrics(self):
-        """Return collected metrics."""
-        execution_time = time.time() - self.start_time if self.start_time else 0
-        return {
-            "execution_time_seconds": round(execution_time, 2),
-            "tool_calls_count": len(self.tool_calls),
-            "tools_used": self.tool_calls,
-            "response_length_chars": self.response_length
-        }
-
-    def log_metrics(self):
-        """Log metrics to logger."""
-        metrics = self.get_metrics()
-        logger.info(f"Agent metrics: {json.dumps(metrics, indent=2)}")
-
-def create_bedrock_model():
-    """
-    Create Bedrock model configuration from environment variables.
-
-    Environment variables:
-    - AWS_REGION: AWS region (default: us-east-1)
-    - MODEL_TEMPERATURE: Model temperature (default: 0.3)
-    - MODEL_MAX_TOKENS: Max tokens (default: 4096)
-    """
-    region = os.getenv("AWS_REGION", "us-east-1")
-    temperature = float(os.getenv("MODEL_TEMPERATURE", "0.3"))
-    max_tokens = int(os.getenv("MODEL_MAX_TOKENS", "4096"))
-
-    logger.info(f"Configuring Bedrock model - Region: {region}, "
-                f"Temperature: {temperature}, Max tokens: {max_tokens}")
-
-    return BedrockModel(
-        model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-        region=region,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        top_p=0.9
-    )
-
-def create_agent():
-    """
-    Create production agent with error handling.
-
-    Returns:
-        Configured Agent instance or None if creation fails
-    """
-    try:
-        # Try Bedrock first
-        model = create_bedrock_model()
-        metrics = MetricsCollector()
-
-        agent = Agent(
-            model=model,
-            tools=[calculator, current_time],
-            system_prompt="""You are a helpful production assistant.
-
-            Guidelines:
-            - Provide accurate, concise responses
-            - Use tools when appropriate
-            - Handle errors gracefully
-            - Always verify your calculations
-            """,
-            callback_handler=metrics
-        )
-
-        logger.info("Agent created successfully with Bedrock model")
-        return agent, metrics
-
-    except Exception as e:
-        logger.error(f"Failed to create Bedrock agent: {e}")
-        logger.info("Falling back to simple model configuration")
-
-        try:
-            # Fallback to simple model
-            metrics = MetricsCollector()
-            agent = Agent(
-                model="claude-3-5-sonnet-20241022",
-                tools=[calculator, current_time],
-                system_prompt="""You are a helpful production assistant.
-
-                Guidelines:
-                - Provide accurate, concise responses
-                - Use tools when appropriate
-                - Handle errors gracefully
-                - Always verify your calculations
-                """,
-                callback_handler=metrics
-            )
-
-            logger.info("Agent created with fallback model")
-            return agent, metrics
-
-        except Exception as fallback_error:
-            logger.error(f"Failed to create fallback agent: {fallback_error}")
-            return None, None
-
-def process_query(agent, metrics, query: str) -> dict:
-    """
-    Process a query with comprehensive error handling and logging.
+@tool
+def get_user_data(user_id: str) -> str:
+    """Retrieve user data from the database.
 
     Args:
-        agent: Configured Agent instance
-        metrics: MetricsCollector instance
-        query: User query to process
+        user_id: The unique user identifier
+    """
+    try:
+        # Replace with actual database call
+        return f"User {user_id}: name=John Doe, email=john@example.com"
+    except Exception as e:
+        return f"Error fetching user: {str(e)}"
+
+
+@tool
+def process_order(order_id: str, action: str) -> str:
+    """Process an order with the specified action.
+
+    Args:
+        order_id: The order identifier
+        action: Action to perform (view, update, cancel)
+    """
+    valid_actions = ["view", "update", "cancel"]
+    if action not in valid_actions:
+        return f"Invalid action. Use one of: {valid_actions}"
+
+    # Replace with actual order processing
+    return f"Order {order_id}: {action} completed successfully"
+
+
+# ============================================================================
+# Lifecycle Hooks
+# ============================================================================
+
+class MetricsHook(HookProvider):
+    """Track request metrics and performance."""
+
+    def __init__(self):
+        self.request_count = 0
+        self.start_time: Optional[float] = None
+
+    def register_hooks(self, registry: HookRegistry) -> None:
+        registry.add_callback(BeforeInvocationEvent, self.on_request_start)
+        registry.add_callback(AfterInvocationEvent, self.on_request_end)
+
+    def on_request_start(self, event: BeforeInvocationEvent) -> None:
+        self.request_count += 1
+        self.start_time = time.time()
+        logger.info(f"Request #{self.request_count} started")
+
+    def on_request_end(self, event: AfterInvocationEvent) -> None:
+        duration = time.time() - (self.start_time or time.time())
+        logger.info(f"Request completed in {duration:.2f}s")
+
+
+class RateLimitHook(HookProvider):
+    """Limit tool calls per request."""
+
+    def __init__(self, max_tools: int = 10):
+        self.max_tools = max_tools
+        self.tool_count = 0
+
+    def register_hooks(self, registry: HookRegistry) -> None:
+        registry.add_callback(BeforeInvocationEvent, self.reset_count)
+        registry.add_callback(BeforeToolCallEvent, self.check_limit)
+
+    def reset_count(self, event: BeforeInvocationEvent) -> None:
+        self.tool_count = 0
+
+    def check_limit(self, event: BeforeToolCallEvent) -> None:
+        self.tool_count += 1
+        if self.tool_count > self.max_tools:
+            logger.warning(f"Tool limit ({self.max_tools}) exceeded")
+            event.cancel_tool = True
+
+
+# ============================================================================
+# Agent Factory
+# ============================================================================
+
+def create_production_agent(
+    session_id: str,
+    guardrail_id: Optional[str] = None,
+    enable_telemetry: bool = True,
+) -> Agent:
+    """Create a production-ready agent with all best practices.
+
+    Args:
+        session_id: Unique session identifier for conversation persistence
+        guardrail_id: Optional Bedrock guardrail ID
+        enable_telemetry: Whether to enable observability
 
     Returns:
-        Dictionary with status, response, and metrics
+        Configured Agent instance
     """
-    logger.info(f"Processing query: {query}")
 
-    try:
-        # Reset metrics for this query
-        metrics.start_time = time.time()
-        metrics.tool_calls = []
-        metrics.response_length = 0
-        metrics.tool_use_ids = set()
+    # Configure model with optional guardrails
+    model_config = {
+        "model_id": os.getenv(
+            "BEDROCK_MODEL_ID",
+            "anthropic.claude-sonnet-4-20250514-v1:0"
+        ),
+        "temperature": 0.3,
+        "max_tokens": 2048,
+    }
 
-        # Process query
-        response = agent(query)
+    if guardrail_id:
+        model_config.update({
+            "guardrail_id": guardrail_id,
+            "guardrail_version": os.getenv("GUARDRAIL_VERSION", "1"),
+            "guardrail_trace": "enabled",
+        })
 
-        # Log success
-        logger.info("Query processed successfully")
-        metrics.log_metrics()
+    model = BedrockModel(**model_config)
 
-        return {
-            "status": "success",
-            "query": query,
-            "response": response.message,
-            "metrics": metrics.get_metrics()
-        }
+    # Setup session persistence
+    session_manager = FileSessionManager(session_id=session_id)
 
-    except Exception as e:
-        logger.error(f"Error processing query: {e}", exc_info=True)
-        return {
-            "status": "error",
-            "query": query,
-            "error": str(e),
-            "metrics": metrics.get_metrics()
-        }
+    # Setup telemetry
+    if enable_telemetry:
+        telemetry = StrandsTelemetry()
+        telemetry.setup_console_exporter()
+        # telemetry.setup_otlp_exporter()  # Uncomment for OTLP
+
+    # Create agent with all components
+    agent = Agent(
+        model=model,
+        system_prompt="""You are a helpful customer service assistant.
+
+        You can:
+        - Look up user information
+        - Process orders (view, update, cancel)
+
+        Always be polite and helpful. If you're unsure, ask for clarification.
+        Never share sensitive information without verification.""",
+        tools=[get_user_data, process_order],
+        session_manager=session_manager,
+        hooks=[MetricsHook(), RateLimitHook(max_tools=10)],
+    )
+
+    return agent
+
+
+# ============================================================================
+# Main Application
+# ============================================================================
 
 def main():
-    logger.info("Starting production Strands agent")
+    # Create agent with session persistence
+    agent = create_production_agent(
+        session_id="demo-session-001",
+        enable_telemetry=True,
+    )
 
-    print("=" * 60)
-    print("Production Strands Agent")
-    print("=" * 60)
+    # Example: Simple query
+    print("\n--- Simple Query ---")
+    response = agent("Hello! Can you help me with my order?")
+    print(f"Agent: {response.message}")
 
-    # Create agent
-    agent, metrics = create_agent()
+    # Example: Tool use
+    print("\n--- Tool Use ---")
+    response = agent("Can you look up user U12345?")
+    print(f"Agent: {response.message}")
 
-    if agent is None:
-        print("\nError: Failed to create agent. Check logs for details.")
-        return
+    # Example: Structured output
+    print("\n--- Structured Output ---")
+    result = agent.structured_output(
+        TaskResult,
+        "Summarize what you can help with and rate your confidence."
+    )
+    print(f"Status: {result.status}")
+    print(f"Result: {result.result}")
+    print(f"Confidence: {result.confidence}")
 
-    print(f"\n✓ Agent initialized successfully")
-    print(f"✓ Logging to: agent.log\n")
-
-    # Example queries
-    example_queries = [
-        "What is the current time?",
-        "Calculate 3111696 / 74088",
-        "What is 15% of 450?",
-    ]
-
-    results = []
-
-    for i, query in enumerate(example_queries, 1):
-        print(f"\n{'-'*60}")
-        print(f"Query {i}: {query}")
-        print(f"{'-'*60}\n")
-
-        result = process_query(agent, metrics, query)
-        results.append(result)
-
-        if result["status"] == "success":
-            print(f"\n\nMetrics: {json.dumps(result['metrics'], indent=2)}\n")
-        else:
-            print(f"\nError: {result['error']}\n")
-
-    # Interactive mode
-    print(f"\n{'='*60}")
-    print("Interactive mode (press Enter to exit)")
-    print(f"{'='*60}\n")
-
-    while True:
-        user_query = input("Your question: ").strip()
-        if not user_query:
-            break
-
-        print()
-        result = process_query(agent, metrics, user_query)
-        if result["status"] == "success":
-            print(f"\n\nMetrics: {json.dumps(result['metrics'], indent=2)}\n")
-        else:
-            print(f"\nError: {result['error']}\n")
-
-    # Summary
-    logger.info(f"Session completed. Processed {len(results)} queries")
-    print(f"\n{'='*60}")
-    print(f"Session complete. Check agent.log for detailed logs.")
-    print(f"{'='*60}")
 
 if __name__ == "__main__":
     main()

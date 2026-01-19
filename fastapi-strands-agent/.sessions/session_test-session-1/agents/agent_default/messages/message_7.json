@@ -1,0 +1,14 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "I don't have the capability to search the web in real-time. My responses are based on a fixed knowledge base that was last updated in 2022. This means I can provide information on a wide range of topics, but I won't be able to access the latest news, updates, or real-time data.\n\nIf you need the most current information, I recommend checking reliable online sources or using a web search engine. If you have any questions or need help understanding information you've found online, I'm here to assist with that!"
+      }
+    ]
+  },
+  "message_id": 7,
+  "redact_message": null,
+  "created_at": "2026-01-18T20:34:22.958504+00:00",
+  "updated_at": "2026-01-18T20:34:22.958512+00:00"
+}

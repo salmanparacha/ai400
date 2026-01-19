@@ -1,0 +1,26 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "<thinking>The User wants to search for AI news online. I can use the \"tavily_search\" tool to perform a real-time web search for AI news. I'll need to specify the query, the search depth, and the topic (news). I'll use the \"advanced\" search depth to get better relevance and include an LLM-generated answer for a more comprehensive result.</thinking>\n"
+      },
+      {
+        "toolUse": {
+          "toolUseId": "tooluse_u4gWoF58bwOkQaIy5dDNb9",
+          "name": "tavily_search",
+          "input": {
+            "search_depth": "advanced",
+            "query": "ai news",
+            "topic": "news",
+            "include_answer": "advanced"
+          }
+        }
+      }
+    ]
+  },
+  "message_id": 1,
+  "redact_message": null,
+  "created_at": "2026-01-18T20:46:21.434526+00:00",
+  "updated_at": "2026-01-18T20:46:21.434536+00:00"
+}

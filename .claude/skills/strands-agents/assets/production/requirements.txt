@@ -1,2 +1,3 @@
-strands-agents
-boto3
+strands-agents[bedrock]
+strands-agents-tools
+pydantic>=2.0

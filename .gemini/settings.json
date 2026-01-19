@@ -1,0 +1,9 @@
+{
+  "general": {
+    "previewFeatures": true
+  },
+  "experimental": {
+    "skills": true,
+    "plan": true
+  }
+}

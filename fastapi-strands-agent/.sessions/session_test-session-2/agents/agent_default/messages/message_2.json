@@ -1,0 +1,22 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "toolResult": {
+          "status": "error",
+          "content": [
+            {
+              "text": "TAVILY_API_KEY environment variable is required. Get your free API key at https://app.tavily.com"
+            }
+          ],
+          "toolUseId": "tooluse_u4gWoF58bwOkQaIy5dDNb9"
+        }
+      }
+    ]
+  },
+  "message_id": 2,
+  "redact_message": null,
+  "created_at": "2026-01-18T20:46:21.438523+00:00",
+  "updated_at": "2026-01-18T20:46:21.438530+00:00"
+}

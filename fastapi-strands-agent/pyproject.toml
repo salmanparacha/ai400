@@ -1,0 +1,20 @@
+[project]
+name = "fastapi-strands-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "boto3>=1.42.30",
+    "fastapi[standard]>=0.128.0",
+    "pydantic>=2.12.5",
+    "strands-agents>=1.22.0",
+    "strands-agents-tools>=0.2.19",
+    "uvicorn>=0.40.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.2",
+]

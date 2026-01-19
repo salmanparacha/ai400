@@ -1,0 +1,14 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "text": "search the web for AI news"
+      }
+    ]
+  },
+  "message_id": 0,
+  "redact_message": null,
+  "created_at": "2026-01-18T20:56:11.110486+00:00",
+  "updated_at": "2026-01-18T20:56:11.110491+00:00"
+}

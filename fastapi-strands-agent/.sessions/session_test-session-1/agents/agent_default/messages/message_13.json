@@ -1,0 +1,14 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "text": "dont you have a websearch tool?"
+      }
+    ]
+  },
+  "message_id": 13,
+  "redact_message": null,
+  "created_at": "2026-01-18T20:44:57.759265+00:00",
+  "updated_at": "2026-01-18T20:44:57.759270+00:00"
+}

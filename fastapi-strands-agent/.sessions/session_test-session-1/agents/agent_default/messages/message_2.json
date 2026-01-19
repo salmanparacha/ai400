@@ -1,0 +1,14 @@
+{
+  "message": {
+    "role": "user",
+    "content": [
+      {
+        "text": "what can you do for me"
+      }
+    ]
+  },
+  "message_id": 2,
+  "redact_message": null,
+  "created_at": "2026-01-18T20:33:22.780478+00:00",
+  "updated_at": "2026-01-18T20:33:22.780484+00:00"
+}

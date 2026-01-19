@@ -1,0 +1,73 @@
+{
+  "LOG": true,
+  "LOG_LEVEL": "debug",
+  "NON_INTERACTIVE_MODE": true,
+  "HOST": "127.0.0.1",
+  "PORT": 3456,
+  "API_TIMEOUT_MS": 600000,
+  "Providers": [
+    {
+      "name": "bedrock",
+      "api_base_url": "https://bedrock-runtime.us-east-1.amazonaws.com",
+      "api_key": "bedrock",
+      "models": [
+        "claude-4-opus",
+        "claude-4-sonnet",
+        "claude-3-5-sonnet",
+        "claude-3-5-haiku",
+        "anthropic.claude-opus-4-20250514-v1:0",
+        "anthropic.claude-sonnet-4-20250514-v1:0",
+        "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "anthropic.claude-3-5-haiku-20241022-v1:0"
+      ],
+      "transformer": {
+        "use": [
+          ["custom", {
+            "path": "/home/sparacha/apps/ai400/claude-code-router-bedrock/transformers/bedrock-transformer.js",
+            "region": "us-east-1",
+            "profile": "default"
+          }]
+        ]
+      }
+    },
+    {
+      "name": "ollama",
+      "api_base_url": "http://localhost:11434/v1/chat/completions",
+      "api_key": "ollama",
+      "models": [
+        "llama3.1:8b",
+        "qwen2.5-coder:7b",
+        "deepseek-r1:7b"
+      ],
+      "transformer": {
+        "use": []
+      }
+    },
+    {
+      "name": "deepseek",
+      "api_base_url": "https://api.deepseek.com/chat/completions",
+      "api_key": "$DEEPSEEK_API_KEY",
+      "models": [
+        "deepseek-chat",
+        "deepseek-reasoner"
+      ],
+      "transformer": {
+        "use": ["deepseek"],
+        "deepseek-chat": {
+          "use": ["tooluse"]
+        },
+        "deepseek-reasoner": {
+          "use": ["reasoning"]
+        }
+      }
+    }
+  ],
+  "Router": {
+    "default": "bedrock,claude-4-sonnet",
+    "background": "ollama,llama3.1:8b",
+    "think": "bedrock,claude-4-opus",
+    "longContext": "bedrock,claude-4-sonnet",
+    "longContextThreshold": 60000,
+    "webSearch": "bedrock,claude-3-5-sonnet"
+  }
+}

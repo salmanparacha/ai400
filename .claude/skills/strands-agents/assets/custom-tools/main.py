@@ -1,103 +1,59 @@
-"""
-Custom Tools Example
-
-Demonstrates creating custom tools with the @tool decorator.
-"""
+#!/usr/bin/env python3
+"""Strands Agent with Custom Tools Example."""
 
 from strands import Agent, tool
 from strands_tools import calculator, current_time
 
-# Define custom tools
-@tool
-def letter_counter(word: str, letter: str) -> int:
-    """
-    Count occurrences of a specific letter in a word.
-
-    Args:
-        word: The input word to search in
-        letter: The specific letter to count
-
-    Returns:
-        The number of occurrences of the letter in the word
-    """
-    if not isinstance(word, str) or not isinstance(letter, str):
-        return 0
-    if len(letter) != 1:
-        raise ValueError("The 'letter' parameter must be a single character")
-    return word.lower().count(letter.lower())
 
 @tool
-def word_reverser(text: str) -> str:
-    """
-    Reverse the characters in a text string.
+def get_weather(city: str) -> str:
+    """Get current weather for a city.
 
     Args:
-        text: The text to reverse
-
-    Returns:
-        The reversed text
+        city: Name of the city to get weather for
     """
-    if not isinstance(text, str):
-        raise TypeError("Input must be a string")
-    return text[::-1]
+    # Replace with actual weather API call
+    return f"Weather in {city}: Sunny, 72°F (22°C)"
+
 
 @tool
-def text_analyzer(text: str) -> dict:
-    """
-    Analyze text and return statistics.
+def search_database(query: str, limit: int = 10) -> str:
+    """Search the database for information.
 
     Args:
-        text: The text to analyze
-
-    Returns:
-        Dictionary with word count, character count, and sentence count
+        query: Search query string
+        limit: Maximum number of results to return
     """
-    if not isinstance(text, str):
-        raise TypeError("Input must be a string")
+    # Replace with actual database query
+    return f"Found {limit} results for '{query}': [sample data]"
 
-    words = text.split()
-    sentences = text.count('.') + text.count('!') + text.count('?')
-
-    return {
-        "word_count": len(words),
-        "character_count": len(text),
-        "sentence_count": max(sentences, 1),
-        "average_word_length": sum(len(word) for word in words) / len(words) if words else 0
-    }
 
 def main():
-    # Create agent with both built-in and custom tools
+    # Create agent with built-in and custom tools
     agent = Agent(
-        tools=[calculator, current_time, letter_counter, word_reverser, text_analyzer],
-        system_prompt="You are a helpful assistant with text analysis and calculation capabilities."
-    )
+        system_prompt="""You are a helpful assistant with access to:
+        - Weather information
+        - Database search
+        - Calculator
+        - Current time
 
-    print("=" * 50)
-    print("Custom Tools Example")
-    print("=" * 50)
+        Use the appropriate tool based on user requests.""",
+        tools=[get_weather, search_database, calculator, current_time]
+    )
 
     # Example queries
     queries = [
-        "What is the time right now?",
-        "Calculate 42 * 17",
-        "How many letter R's are in the word 'strawberry'?",
-        "Reverse the word 'hello'",
-        "Analyze this text: 'Hello world. How are you? I am fine.'"
+        "What's the weather in Seattle?",
+        "What time is it now?",
+        "Calculate 15% of 230",
+        "Search the database for recent orders",
     ]
 
-    for i, query in enumerate(queries, 1):
-        print(f"\n{i}. {query}")
+    for query in queries:
+        print(f"\nUser: {query}")
         response = agent(query)
-        print(f"Response: {response.message}\n")
+        print(f"Agent: {response.message}")
 
-    # Interactive mode
-    print("\nInteractive mode - ask your own question (or press Enter to exit):")
-    while True:
-        user_query = input("Your question: ")
-        if not user_query.strip():
-            break
-        response = agent(user_query)
-        print(f"Response: {response.message}\n")
 
 if __name__ == "__main__":
     main()

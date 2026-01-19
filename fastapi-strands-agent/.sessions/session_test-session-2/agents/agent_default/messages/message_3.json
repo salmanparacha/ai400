@@ -1,0 +1,14 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "<thinking>The tool call failed because the TAVILY_API_KEY environment variable is not set. I need to inform the User about this issue and guide them on how to obtain their API key.</thinking>\n\n<response>I'm sorry, but the search tool requires an API key to function. You can obtain a free API key by visiting <https://app.tavily.com>. Once you have your API key, please let me know, and I can perform the search for you.</response>"
+      }
+    ]
+  },
+  "message_id": 3,
+  "redact_message": null,
+  "created_at": "2026-01-18T20:46:22.597499+00:00",
+  "updated_at": "2026-01-18T20:46:22.597507+00:00"
+}

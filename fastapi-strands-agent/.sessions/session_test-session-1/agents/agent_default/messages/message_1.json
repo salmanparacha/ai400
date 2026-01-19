@@ -1,0 +1,14 @@
+{
+  "message": {
+    "role": "assistant",
+    "content": [
+      {
+        "text": "Hello! I'm doing well, thank you for asking. How can I assist you today? If you have any questions or need help with something, feel free to let me know!"
+      }
+    ]
+  },
+  "message_id": 1,
+  "redact_message": null,
+  "created_at": "2026-01-18T20:32:57.239323+00:00",
+  "updated_at": "2026-01-18T20:32:57.239330+00:00"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "claude-code-router-bedrock",
+  "version": "1.0.0",
+  "description": "AWS Bedrock transformer for Claude Code Router",
+  "main": "transformers/bedrock-transformer.js",
+  "scripts": {
+    "test": "node examples/test-transformer.js"
+  },
+  "keywords": [
+    "claude-code-router",
+    "aws-bedrock",
+    "anthropic",
+    "transformer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.716.0",
+    "@aws-sdk/credential-providers": "^3.716.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
